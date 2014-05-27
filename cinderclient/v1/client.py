@@ -80,11 +80,11 @@ class Client(object):
                     setattr(self, extension.name,
                             extension.manager_class(self))
 
-        self.client = client.HTTPClient(
-            username,
-            password,
-            project_id,
-            auth_url,
+        self.client = client._construct_http_client(
+            username=username,
+            password=password,
+            project_id=project_id,
+            auth_url=auth_url,
             insecure=insecure,
             timeout=timeout,
             tenant_id=tenant_id,
@@ -101,6 +101,7 @@ class Client(object):
             auth_system=auth_system,
             auth_plugin=auth_plugin)
 
+    @client._original_only
     def authenticate(self):
         """
         Authenticate against the server.
@@ -113,5 +114,6 @@ class Client(object):
         """
         self.client.authenticate()
 
+    @client._original_only
     def get_volume_api_version_from_endpoint(self):
         return self.client.get_volume_api_version_from_endpoint()

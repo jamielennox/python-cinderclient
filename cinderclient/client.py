@@ -21,6 +21,7 @@ OpenStack Client interface. Handles the REST calls and responses.
 
 from __future__ import print_function
 
+import functools
 import logging
 
 try:
@@ -51,11 +52,91 @@ from cinderclient import exceptions
 from cinderclient import utils
 
 
+class SessionClient(object):
+
+    def __init__(self, session, auth, interface, service_type, region_name):
+        self.session = session
+        self.auth = auth
+
+        self.interface = interface
+        self.service_type = service_type
+        self.region_name = region_name
+
+    def request(self, url, method, **kwargs):
+        kwargs.setdefault('user_agent', 'python-cinderclient')
+        kwargs.setdefault('auth', self.auth)
+        kwargs.setdefault('authenticated', False)
+
+        headers = kwargs.setdefault('headers', {})
+        headers.setdefault('Accept', 'application/json')
+
+        try:
+            kwargs['json'] = kwargs.pop('body')
+        except KeyError:
+            pass
+
+        endpoint_filter = kwargs.setdefault('endpoint_filter', {})
+        endpoint_filter.setdefault('interface', self.interface)
+        endpoint_filter.setdefault('service_type', self.service_type)
+        endpoint_filter.setdefault('region_name', self.region_name)
+
+        resp = self.session.request(url, method, raise_exc=False, **kwargs)
+
+        body = None
+        if resp.text:
+            try:
+                body = resp.json()
+            except ValueError:
+                pass
+
+        if resp.status_code >= 400:
+            raise exceptions.from_response(resp, body)
+
+        return resp, body
+
+    def _cs_request(self, url, method, **kwargs):
+        # this function is mostly redundant but makes compatibility easier
+        kwargs.setdefault('authenticated', True)
+        return self.request(url, method, **kwargs)
+
+    def get(self, url, **kwargs):
+        return self._cs_request(url, 'GET', **kwargs)
+
+    def post(self, url, **kwargs):
+        return self._cs_request(url, 'POST', **kwargs)
+
+    def put(self, url, **kwargs):
+        return self._cs_request(url, 'PUT', **kwargs)
+
+    def delete(self, url, **kwargs):
+        return self._cs_request(url, 'DELETE', **kwargs)
+
+
+def _original_only(f):
+    """Indicates and enforces that this function can only be used if we are
+    using the original HTTPClient object.
+
+    We use this to specify that if you use the newer Session HTTP client then
+    you are aware that the way you use your client has been updated and certain
+    functions are no longer allowed to be used.
+    """
+    @functools.wraps(f)
+    def wrapper(self, *args, **kwargs):
+        if isinstance(self.client, SessionClient):
+            msg = ('This call is no longer available. The operation should '
+                   'be performed on the session object instead.')
+            raise exceptions.InvalidUsage(msg)
+
+        return f(self, *args, **kwargs)
+
+    return wrapper
+
+
 class HTTPClient(object):
 
     USER_AGENT = 'python-cinderclient'
 
-    def __init__(self, user, password, projectid, auth_url=None,
+    def __init__(self, user, password, projectid=None, auth_url=None,
                  insecure=False, timeout=None, tenant_id=None,
                  proxy_tenant_id=None, proxy_token=None, region_name=None,
                  endpoint_type='publicURL', service_type=None,
@@ -396,6 +477,45 @@ class HTTPClient(object):
         msg = "Invalid client version '%s'. must be one of: %s" % (
             (version, ', '.join(valid_versions)))
         raise exceptions.UnsupportedVersion(msg)
+
+
+def _construct_http_client(username=None, password=None, project_id=None,
+                           auth_url=None, insecure=False, timeout=None,
+                           proxy_tenant_id=None, proxy_token=None,
+                           region_name=None, endpoint_type='publicURL',
+                           extensions=None, service_type='volume',
+                           service_name=None, volume_service_name=None,
+                           http_log_debug=False, auth_system='keystone',
+                           auth_plugin=None, cacert=None, tenant_id=None,
+                           retries=None, session=None, auth=None):
+    if session:
+        return SessionClient(session=session,
+                             auth=auth,
+                             interface=endpoint_type,
+                             service_type=service_type,
+                             region_name=region_name)
+    else:
+        # FIXME(jamielennox): username and password are now optional. Need
+        # to test that they were provided in this mode.
+        return HTTPClient(username,
+                          password,
+                          projectid=project_id,
+                          tenant_id=tenant_id,
+                          auth_url=auth_url,
+                          insecure=insecure,
+                          timeout=timeout,
+                          auth_system=auth_system,
+                          auth_plugin=auth_plugin,
+                          proxy_token=proxy_token,
+                          proxy_tenant_id=proxy_tenant_id,
+                          region_name=region_name,
+                          endpoint_type=endpoint_type,
+                          service_type=service_type,
+                          service_name=service_name,
+                          retries=retries,
+                          volume_service_name=volume_service_name,
+                          http_log_debug=http_log_debug,
+                          cacert=cacert)
 
 
 def get_client_class(version):

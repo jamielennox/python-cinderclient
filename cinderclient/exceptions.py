@@ -144,6 +144,16 @@ class HTTPNotImplemented(ClientException):
     message = "Not Implemented"
 
 
+class InvalidUsage(RuntimeError):
+    """This function call is invalid in the way you are using this client.
+
+    Due to the transition to using keystoneclient some function calls are no
+    longer available. You should make a similar call to the session object
+    instead.
+    """
+    pass
+
+
 # In Python 2.4 Exception is old-style and thus doesn't have a __subclasses__()
 # so we can do this:
 #     _code_map = dict((c.http_status, c)
