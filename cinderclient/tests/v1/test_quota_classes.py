@@ -13,28 +13,29 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from cinderclient.tests.fixture_data import client
+from cinderclient.tests.fixture_data import quota_classes
 from cinderclient.tests import utils
-from cinderclient.tests.v1 import fakes
 
 
-cs = fakes.FakeClient()
+class QuotaSetsTest(utils.FixturedTestCase):
 
-
-class QuotaClassSetsTest(utils.TestCase):
+    client_fixture_class = client.V1
+    data_fixture_class = quota_classes.Fixture
 
     def test_class_quotas_get(self):
         class_name = 'test'
-        cs.quota_classes.get(class_name)
-        cs.assert_called('GET', '/os-quota-class-sets/%s' % class_name)
+        self.cs.quota_classes.get(class_name)
+        self.assert_called('GET', '/os-quota-class-sets/%s' % class_name)
 
     def test_update_quota(self):
-        q = cs.quota_classes.get('test')
+        q = self.cs.quota_classes.get('test')
         q.update(volumes=2, snapshots=2)
-        cs.assert_called('PUT', '/os-quota-class-sets/test')
+        self.assert_called('PUT', '/os-quota-class-sets/test')
 
     def test_refresh_quota(self):
-        q = cs.quota_classes.get('test')
-        q2 = cs.quota_classes.get('test')
+        q = self.cs.quota_classes.get('test')
+        q2 = self.cs.quota_classes.get('test')
         self.assertEqual(q.volumes, q2.volumes)
         q2.volumes = 0
         self.assertNotEqual(q.volumes, q2.volumes)
