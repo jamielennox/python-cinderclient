@@ -11,11 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 
 import fixtures
 import requests
 from requests_mock.contrib import fixture as requests_mock_fixture
+import six
 import testtools
 
 
@@ -68,7 +70,7 @@ class FixturedTestCase(TestCase):
                 req_data = req_data.decode('utf-8')
             if not isinstance(body, six.string_types):
                 # json load if the input body to match against is not a string
-                req_data = jsonutils.loads(req_data)
+                req_data = json.loads(req_data)
             self.assertEqual(req_data, body)
 
 
