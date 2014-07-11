@@ -13,63 +13,65 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from cinderclient.tests.fixture_data import client
+from cinderclient.tests.fixture_data import services as services_fixture
 from cinderclient.tests import utils
-from cinderclient.tests.v1 import fakes
 from cinderclient.v1 import services
 
 
-cs = fakes.FakeClient()
+class ServicesTest(utils.FixturedTestCase):
 
-
-class ServicesTest(utils.TestCase):
+    client_fixture_class = client.V1
+    data_fixture_class = services_fixture.Fixture
 
     def test_list_services(self):
-        svs = cs.services.list()
-        cs.assert_called('GET', '/os-services')
+        svs = self.cs.services.list()
+        self.assert_called('GET', '/os-services')
         self.assertEqual(len(svs), 3)
         [self.assertIsInstance(s, services.Service) for s in svs]
 
     def test_list_services_with_hostname(self):
-        svs = cs.services.list(host='host2')
-        cs.assert_called('GET', '/os-services?host=host2')
+        svs = self.cs.services.list(host='host2')
+        self.assert_called('GET', '/os-services?host=host2')
         self.assertEqual(len(svs), 2)
         [self.assertIsInstance(s, services.Service) for s in svs]
         [self.assertEqual(s.host, 'host2') for s in svs]
 
     def test_list_services_with_binary(self):
-        svs = cs.services.list(binary='cinder-volume')
-        cs.assert_called('GET', '/os-services?binary=cinder-volume')
+        svs = self.cs.services.list(binary='cinder-volume')
+        self.assert_called('GET', '/os-services?binary=cinder-volume')
         self.assertEqual(len(svs), 2)
         [self.assertIsInstance(s, services.Service) for s in svs]
         [self.assertEqual(s.binary, 'cinder-volume') for s in svs]
 
     def test_list_services_with_host_binary(self):
-        svs = cs.services.list('host2', 'cinder-volume')
-        cs.assert_called('GET', '/os-services?host=host2&binary=cinder-volume')
+        svs = self.cs.services.list('host2', 'cinder-volume')
+        self.assert_called('GET',
+                           '/os-services?host=host2&binary=cinder-volume')
         self.assertEqual(len(svs), 1)
         [self.assertIsInstance(s, services.Service) for s in svs]
         [self.assertEqual(s.host, 'host2') for s in svs]
         [self.assertEqual(s.binary, 'cinder-volume') for s in svs]
 
     def test_services_enable(self):
-        s = cs.services.enable('host1', 'cinder-volume')
+        s = self.cs.services.enable('host1', 'cinder-volume')
         values = {"host": "host1", 'binary': 'cinder-volume'}
-        cs.assert_called('PUT', '/os-services/enable', values)
+        self.assert_called('PUT', '/os-services/enable', values)
         self.assertIsInstance(s, services.Service)
         self.assertEqual(s.status, 'enabled')
 
     def test_services_disable(self):
-        s = cs.services.disable('host1', 'cinder-volume')
+        s = self.cs.services.disable('host1', 'cinder-volume')
         values = {"host": "host1", 'binary': 'cinder-volume'}
-        cs.assert_called('PUT', '/os-services/disable', values)
+        self.assert_called('PUT', '/os-services/disable', values)
         self.assertIsInstance(s, services.Service)
         self.assertEqual(s.status, 'disabled')
 
     def test_services_disable_log_reason(self):
-        s = cs.services.disable_log_reason(
+        s = self.cs.services.disable_log_reason(
             'host1', 'cinder-volume', 'disable bad host')
         values = {"host": "host1", 'binary': 'cinder-volume',
                   "disabled_reason": "disable bad host"}
-        cs.assert_called('PUT', '/os-services/disable-log-reason', values)
+        self.assert_called('PUT', '/os-services/disable-log-reason', values)
         self.assertTrue(isinstance(s, services.Service))
         self.assertEqual(s.status, 'disabled')
