@@ -13,34 +13,35 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from cinderclient.tests.fixture_data import client
+from cinderclient.tests.fixture_data import quotas
 from cinderclient.tests import utils
-from cinderclient.tests.v1 import fakes
 
 
-cs = fakes.FakeClient()
+class QuotaSetsTest(utils.FixturedTestCase):
 
-
-class QuotaSetsTest(utils.TestCase):
+    client_fixture_class = client.V1
+    data_fixture_class = quotas.Fixture
 
     def test_tenant_quotas_get(self):
         tenant_id = 'test'
-        cs.quotas.get(tenant_id)
-        cs.assert_called('GET', '/os-quota-sets/%s?usage=False' % tenant_id)
+        self.cs.quotas.get(tenant_id)
+        self.assert_called('GET', '/os-quota-sets/%s?usage=False' % tenant_id)
 
     def test_tenant_quotas_defaults(self):
         tenant_id = 'test'
-        cs.quotas.defaults(tenant_id)
-        cs.assert_called('GET', '/os-quota-sets/%s/defaults' % tenant_id)
+        self.cs.quotas.defaults(tenant_id)
+        self.assert_called('GET', '/os-quota-sets/%s/defaults' % tenant_id)
 
     def test_update_quota(self):
-        q = cs.quotas.get('test')
+        q = self.cs.quotas.get('test')
         q.update(volumes=2)
         q.update(snapshots=2)
-        cs.assert_called('PUT', '/os-quota-sets/test')
+        self.assert_called('PUT', '/os-quota-sets/test')
 
     def test_refresh_quota(self):
-        q = cs.quotas.get('test')
-        q2 = cs.quotas.get('test')
+        q = self.cs.quotas.get('test')
+        q2 = self.cs.quotas.get('test')
         self.assertEqual(q.volumes, q2.volumes)
         self.assertEqual(q.snapshots, q2.snapshots)
         q2.volumes = 0
@@ -53,5 +54,5 @@ class QuotaSetsTest(utils.TestCase):
 
     def test_delete_quota(self):
         tenant_id = 'test'
-        cs.quotas.delete(tenant_id)
-        cs.assert_called('DELETE', '/os-quota-sets/test')
+        self.cs.quotas.delete(tenant_id)
+        self.assert_called('DELETE', '/os-quota-sets/test')
