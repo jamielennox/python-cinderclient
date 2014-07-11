@@ -13,41 +13,42 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from cinderclient.tests.fixture_data import client
+from cinderclient.tests.fixture_data import volume_backups as data
 from cinderclient.tests import utils
-from cinderclient.tests.v1 import fakes
 
 
-cs = fakes.FakeClient()
+class VolumeBackupsTest(utils.FixturedTestCase):
 
-
-class VolumeBackupsTest(utils.TestCase):
+    client_fixture_class = client.V1
+    data_fixture_class = data.V1
 
     def test_create(self):
-        cs.backups.create('2b695faf-b963-40c8-8464-274008fbcef4')
-        cs.assert_called('POST', '/backups')
+        self.cs.backups.create('2b695faf-b963-40c8-8464-274008fbcef4')
+        self.assert_called('POST', '/backups')
 
     def test_get(self):
         backup_id = '76a17945-3c6f-435c-975b-b5685db10b62'
-        cs.backups.get(backup_id)
-        cs.assert_called('GET', '/backups/%s' % backup_id)
+        self.cs.backups.get(backup_id)
+        self.assert_called('GET', '/backups/%s' % backup_id)
 
     def test_list(self):
-        cs.backups.list()
-        cs.assert_called('GET', '/backups/detail')
+        self.cs.backups.list()
+        self.assert_called('GET', '/backups/detail')
 
     def test_delete(self):
-        b = cs.backups.list()[0]
+        b = self.cs.backups.list()[0]
         b.delete()
-        cs.assert_called('DELETE',
-                         '/backups/76a17945-3c6f-435c-975b-b5685db10b62')
-        cs.backups.delete('76a17945-3c6f-435c-975b-b5685db10b62')
-        cs.assert_called('DELETE',
-                         '/backups/76a17945-3c6f-435c-975b-b5685db10b62')
-        cs.backups.delete(b)
-        cs.assert_called('DELETE',
-                         '/backups/76a17945-3c6f-435c-975b-b5685db10b62')
+        self.assert_called('DELETE',
+                           '/backups/76a17945-3c6f-435c-975b-b5685db10b62')
+        self.cs.backups.delete('76a17945-3c6f-435c-975b-b5685db10b62')
+        self.assert_called('DELETE',
+                           '/backups/76a17945-3c6f-435c-975b-b5685db10b62')
+        self.cs.backups.delete(b)
+        self.assert_called('DELETE',
+                           '/backups/76a17945-3c6f-435c-975b-b5685db10b62')
 
     def test_restore(self):
         backup_id = '76a17945-3c6f-435c-975b-b5685db10b62'
-        cs.restores.restore(backup_id)
-        cs.assert_called('POST', '/backups/%s/restore' % backup_id)
+        self.cs.restores.restore(backup_id)
+        self.assert_called('POST', '/backups/%s/restore' % backup_id)
