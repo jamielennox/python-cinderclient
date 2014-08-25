@@ -27,6 +27,7 @@ from cinderclient.openstack.common import strutils
 from cinderclient import utils
 
 from keystoneclient import access
+from keystoneclient import adapter
 from keystoneclient.auth.identity import v3 as v3_auth
 import requests
 
@@ -67,98 +68,33 @@ class CinderClientMixin(object):
         raise exceptions.UnsupportedVersion(msg)
 
 
-class SessionClient(CinderClientMixin):
+class SessionClient(adapter.LegacyJsonAdapter, CinderClientMixin):
 
-    def __init__(self, session, auth, interface=None,
-                 service_type=None, service_name=None,
-                 region_name=None, http_log_debug=False):
-        self.session = session
-        self.auth = auth
-
-        self.interface = interface
-        self.service_type = service_type
-        self.service_name = service_name
-        self.region_name = region_name
-        self.auth_token = None
-        self.endpoint_url = None
-        self.management_url = self.endpoint_url
-        self.http_log_debug = http_log_debug
-
-        self._logger = logging.getLogger(__name__)
-        if self.http_log_debug:
-            # Use keystoneclient's  logs instead of writing our own
-            ks_logger = logging.getLogger("keystoneclient")
-            ks_logger.setLevel(logging.DEBUG)
-
-    def request(self, url, method, **kwargs):
+    def __init__(self, **kwargs):
         kwargs.setdefault('user_agent', 'python-cinderclient')
-        kwargs.setdefault('auth', self.auth)
+        kwargs.setdefault('service_type', 'volume')
+        super(SessionClient, self).__init__(**kwargs)
+
+    def request(self, *args, **kwargs):
         kwargs.setdefault('authenticated', False)
-
-        try:
-            kwargs['json'] = kwargs.pop('body')
-        except KeyError:
-            pass
-
-        endpoint_filter = kwargs.setdefault('endpoint_filter', {})
-        endpoint_filter.setdefault('interface', self.interface)
-        endpoint_filter.setdefault('service_type', self.service_type)
-        endpoint_filter.setdefault('service_name', self.service_name)
-        endpoint_filter.setdefault('region_name', self.region_name)
-
-        resp = self.session.request(url, method, **kwargs)
-
-        body = None
-        if resp.text:
-            try:
-                body = resp.json()
-            except ValueError:
-                pass
-
-        return resp, body
+        return super(SessionClient, self).request(*args, **kwargs)
 
     def _cs_request(self, url, method, **kwargs):
         # this function is mostly redundant but makes compatibility easier
         kwargs.setdefault('authenticated', True)
         return self.request(url, method, **kwargs)
 
-    def do_request(self, url, method, **kwargs):
-        # this function is mostly redundant but makes compatibility easier
-        kwargs.setdefault('headers', {})
-        if self.auth_token is None:
-            self.authenticate()
-        kwargs['headers']['X-Auth-Token'] = self.auth_token
-        if self.access_info is not None:
-            kwargs['headers'][
-                'X-Auth-Project-Id'] = self.access_info.project_id
-
-        resp, body = self._cs_request(
-            self.endpoint_url + url, method, **kwargs)
-        return resp, body
-
-    def authenticate(self):
-        self.auth_token = self.session.get_token(self.auth)
-        self.access_info = self.session.auth.get_access(self.session)
-
-        self.endpoint_url = self.session.get_endpoint(
-            self.auth,
-            service_type=self.service_type,
-            region_name=self.region_name,
-            interface=self.interface)
-        self.management_url = self.endpoint_url
-        self.service_catalog = self.access_info.service_catalog
-
     def get(self, url, **kwargs):
-        return self.do_request(url, 'GET', **kwargs)
+        return self._cs_request(url, 'GET', **kwargs)
 
     def post(self, url, **kwargs):
-        return self.do_request(url, 'POST', **kwargs)
+        return self._cs_request(url, 'POST', **kwargs)
 
     def put(self, url, **kwargs):
-        return self.do_request(url, 'PUT', **kwargs)
+        return self._cs_request(url, 'PUT', **kwargs)
 
     def delete(self, url, **kwargs):
-        return self.do_request(url, 'DELETE', **kwargs)
+        return self._cs_request(url, 'DELETE', **kwargs)
 
 
 class HTTPClient(CinderClientMixin):
@@ -504,7 +440,8 @@ def _construct_http_client(username=None, password=None, project_id=None,
                            auth_system='keystone', auth_plugin=None,
                            cacert=None, tenant_id=None,
                            session=None,
-                           auth=None):
+                           auth=None,
+                           **kwargs):
 
     # Don't use sessions if third party plugin is used
     if session and not auth_plugin:
@@ -525,7 +462,7 @@ def _construct_http_client(username=None, password=None, project_id=None,
                              service_type=service_type,
                              service_name=service_name,
                              region_name=region_name,
-                             http_log_debug=http_log_debug)
+                             **kwargs)
 
     # FIXME(jamielennox): username and password are now optional. Need
     # to test that they were provided in this mode.

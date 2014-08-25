@@ -50,7 +50,7 @@ class Client(object):
                  volume_service_name=None, retries=None,
                  http_log_debug=False, cacert=None,
                  auth_system='keystone', auth_plugin=None,
-                 session=None):
+                 session=None, **kwargs):
         # FIXME(comstud): Rename the api_key argument above when we
         # know it's not being used as keyword argument
         password = api_key
@@ -99,7 +99,8 @@ class Client(object):
             cacert=cacert,
             auth_system=auth_system,
             auth_plugin=auth_plugin,
-            session=session)
+            session=session,
+            **kwargs)
 
     def authenticate(self):
         """Authenticate against the server.
