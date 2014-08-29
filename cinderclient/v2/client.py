@@ -42,7 +42,7 @@ class Client(object):
         ...
     """
 
-    def __init__(self, username, api_key, project_id=None, auth_url='',
+    def __init__(self, username=None, api_key=None, project_id=None, auth_url='',
                  insecure=False, timeout=None, tenant_id=None,
                  proxy_tenant_id=None, proxy_token=None, region_name=None,
                  endpoint_type='publicURL', extensions=None,

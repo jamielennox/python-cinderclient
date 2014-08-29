@@ -444,9 +444,9 @@ def _construct_http_client(username=None, password=None, project_id=None,
                            **kwargs):
 
     if session:
+        kwargs.setdefault('interface', endpoint_type)
         return SessionClient(session=session,
                              auth=auth,
-                             interface=endpoint_type,
                              service_type=service_type,
                              service_name=service_name,
                              region_name=region_name,
