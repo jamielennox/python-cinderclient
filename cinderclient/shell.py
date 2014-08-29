@@ -632,41 +632,41 @@ class OpenStackCinderShell(object):
                                 auth_plugin=auth_plugin,
                                 session=auth_session)
 
-        # try:
-        #     if not utils.isunauthenticated(args.func):
-        #         self.cs.authenticate()
-        # except exc.Unauthorized:
-        #     raise exc.CommandError("OpenStack credentials are not valid.")
-        # except exc.AuthorizationFailure:
-        #     raise exc.CommandError("Unable to authorize user.")
-        #
-        # endpoint_api_version = None
-        # # Try to get the API version from the endpoint URL.  If that fails fall
-        # # back to trying to use what the user specified via
-        # # --os-volume-api-version or with the OS_VOLUME_API_VERSION environment
-        # # variable.  Fail safe is to use the default API setting.
-        # try:
-        #     endpoint_api_version = \
-        #         self.cs.get_volume_api_version_from_endpoint()
-        #     if endpoint_api_version != options.os_volume_api_version:
-        #         msg = (("OpenStack Block Storage API version is set to %s "
-        #                 "but you are accessing a %s endpoint. "
-        #                 "Change its value through --os-volume-api-version "
-        #                 "or env[OS_VOLUME_API_VERSION].")
-        #                % (options.os_volume_api_version, endpoint_api_version))
-        #         raise exc.InvalidAPIVersion(msg)
-        # except exc.UnsupportedVersion:
-        #     endpoint_api_version = options.os_volume_api_version
-        #     if api_version_input:
-        #         logger.warning("Cannot determine the API version from "
-        #                        "the endpoint URL. Falling back to the "
-        #                        "user-specified version: %s" %
-        #                        endpoint_api_version)
-        #     else:
-        #         logger.warning("Cannot determine the API version from the "
-        #                        "endpoint URL or user input. Falling back "
-        #                        "to the default API version: %s" %
-        #                        endpoint_api_version)
+        try:
+            if not utils.isunauthenticated(args.func):
+                self.cs.authenticate()
+        except exc.Unauthorized:
+            raise exc.CommandError("OpenStack credentials are not valid.")
+        except exc.AuthorizationFailure:
+            raise exc.CommandError("Unable to authorize user.")
+
+        endpoint_api_version = None
+        # Try to get the API version from the endpoint URL.  If that fails fall
+        # back to trying to use what the user specified via
+        # --os-volume-api-version or with the OS_VOLUME_API_VERSION environment
+        # variable.  Fail safe is to use the default API setting.
+        try:
+            endpoint_api_version = \
+                self.cs.get_volume_api_version_from_endpoint()
+            if endpoint_api_version != options.os_volume_api_version:
+                msg = (("OpenStack Block Storage API version is set to %s "
+                        "but you are accessing a %s endpoint. "
+                        "Change its value through --os-volume-api-version "
+                        "or env[OS_VOLUME_API_VERSION].")
+                       % (options.os_volume_api_version, endpoint_api_version))
+                raise exc.InvalidAPIVersion(msg)
+        except exc.UnsupportedVersion:
+            endpoint_api_version = options.os_volume_api_version
+            if api_version_input:
+                logger.warning("Cannot determine the API version from "
+                               "the endpoint URL. Falling back to the "
+                               "user-specified version: %s" %
+                               endpoint_api_version)
+            else:
+                logger.warning("Cannot determine the API version from the "
+                               "endpoint URL or user input. Falling back "
+                               "to the default API version: %s" %
+                               endpoint_api_version)
 
         args.func(self.cs, args)
 

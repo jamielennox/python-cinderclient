@@ -28,7 +28,6 @@ from cinderclient import utils
 
 from keystoneclient import access
 from keystoneclient import adapter
-from keystoneclient.auth.identity import v3 as v3_auth
 import requests
 
 
@@ -52,20 +51,20 @@ if not hasattr(urlparse, 'parse_qsl'):
     import cgi
     urlparse.parse_qsl = cgi.parse_qsl
 
+_VALID_VERSIONS = ['v1', 'v2']
 
-class CinderClientMixin(object):
 
-    def get_volume_api_version_from_endpoint(self):
-        magic_tuple = urlparse.urlsplit(self.management_url)
-        scheme, netloc, path, query, frag = magic_tuple
-        components = path.split("/")
-        valid_versions = ['v1', 'v2']
-        for version in valid_versions:
-            if version in components:
-                return version[1:]
-        msg = "Invalid client version '%s'. must be one of: %s" % (
-            (version, ', '.join(valid_versions)))
-        raise exceptions.UnsupportedVersion(msg)
+def _get_volume_api_from_url(url):
+    scheme, netloc, path, query, frag = urlparse.urlsplit(url)
+    components = path.split("/")
+
+    for version in _valid_versions:
+        if version in components:
+            return version[1:]
+
+    msg = "Invalid client version '%s'. must be one of: %s" % (
+        (version, ', '.join(valid_versions)))
+    raise exceptions.UnsupportedVersion(msg)
 
 
 class SessionClient(adapter.LegacyJsonAdapter):
@@ -95,6 +94,13 @@ class SessionClient(adapter.LegacyJsonAdapter):
 
     def delete(self, url, **kwargs):
         return self._cs_request(url, 'DELETE', **kwargs)
+
+    def get_volume_api_version_from_endpoint(self):
+        return _get_volume_api_from_url(self.get_endpoint())
+
+    def authenticate(self, auth=None):
+        self.invalidate(auth)
+        return self.get_token(auth)
 
 
 class HTTPClient(CinderClientMixin):
@@ -271,6 +277,9 @@ class HTTPClient(CinderClientMixin):
 
     def delete(self, url, **kwargs):
         return self._cs_request(url, 'DELETE', **kwargs)
+
+    def get_volume_api_version_from_endpoint(self):
+        return _get_volume_api_from_url(self.management_url)
 
     def _extract_service_catalog(self, url, resp, body, extract_token=True):
         """See what the auth service told us and process the response.

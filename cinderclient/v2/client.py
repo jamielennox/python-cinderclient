@@ -42,14 +42,13 @@ class Client(object):
         ...
     """
 
-    def __init__(self, username=None, api_key=None, project_id=None, auth_url='',
-                 insecure=False, timeout=None, tenant_id=None,
+    def __init__(self, username=None, api_key=None, project_id=None,
+                 auth_url='', insecure=False, timeout=None, tenant_id=None,
                  proxy_tenant_id=None, proxy_token=None, region_name=None,
                  endpoint_type='publicURL', extensions=None,
                  service_type='volumev2', service_name=None,
-                 volume_service_name=None, retries=None,
-                 http_log_debug=False, cacert=None,
-                 auth_system='keystone', auth_plugin=None,
+                 volume_service_name=None, retries=None, http_log_debug=False,
+                 cacert=None, auth_system='keystone', auth_plugin=None,
                  session=None, **kwargs):
         # FIXME(comstud): Rename the api_key argument above when we
         # know it's not being used as keyword argument
