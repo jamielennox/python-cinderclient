@@ -68,7 +68,7 @@ class CinderClientMixin(object):
         raise exceptions.UnsupportedVersion(msg)
 
 
-class SessionClient(adapter.LegacyJsonAdapter, CinderClientMixin):
+class SessionClient(adapter.LegacyJsonAdapter):
 
     def __init__(self, **kwargs):
         kwargs.setdefault('user_agent', 'python-cinderclient')
@@ -443,19 +443,7 @@ def _construct_http_client(username=None, password=None, project_id=None,
                            auth=None,
                            **kwargs):
 
-    # Don't use sessions if third party plugin is used
-    if session and not auth_plugin:
-
-        # If auth pluggin  is specified use that pluggin
-        session.auth = auth or session.auth
-
-        if isinstance(session.auth, v3_auth.Password):
-            # In v3 and v2 interace names are different
-            interface_map = {"publicURL": "public",
-                             "adminURL": "admin"}
-
-            endpoint_type = interface_map[endpoint_type]
-
+    if session:
         return SessionClient(session=session,
                              auth=auth,
                              interface=endpoint_type,
@@ -463,29 +451,29 @@ def _construct_http_client(username=None, password=None, project_id=None,
                              service_name=service_name,
                              region_name=region_name,
                              **kwargs)
-
-    # FIXME(jamielennox): username and password are now optional. Need
-    # to test that they were provided in this mode.
-    return HTTPClient(username,
-                      password,
-                      projectid=project_id,
-                      auth_url=auth_url,
-                      insecure=insecure,
-                      timeout=timeout,
-                      tenant_id=tenant_id,
-                      proxy_token=proxy_token,
-                      proxy_tenant_id=proxy_tenant_id,
-                      region_name=region_name,
-                      endpoint_type=endpoint_type,
-                      service_type=service_type,
-                      service_name=service_name,
-                      volume_service_name=volume_service_name,
-                      retries=retries,
-                      http_log_debug=http_log_debug,
-                      cacert=cacert,
-                      auth_system=auth_system,
-                      auth_plugin=auth_plugin,
-                      )
+    else:
+        # FIXME(jamielennox): username and password are now optional. Need
+        # to test that they were provided in this mode.
+        return HTTPClient(username,
+                          password,
+                          projectid=project_id,
+                          auth_url=auth_url,
+                          insecure=insecure,
+                          timeout=timeout,
+                          tenant_id=tenant_id,
+                          proxy_token=proxy_token,
+                          proxy_tenant_id=proxy_tenant_id,
+                          region_name=region_name,
+                          endpoint_type=endpoint_type,
+                          service_type=service_type,
+                          service_name=service_name,
+                          volume_service_name=volume_service_name,
+                          retries=retries,
+                          http_log_debug=http_log_debug,
+                          cacert=cacert,
+                          auth_system=auth_system,
+                          auth_plugin=auth_plugin,
+                          )
 
 
 def get_client_class(version):
