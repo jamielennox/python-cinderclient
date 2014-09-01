@@ -103,7 +103,7 @@ class SessionClient(adapter.LegacyJsonAdapter):
         return self.get_token(auth)
 
 
-class HTTPClient(CinderClientMixin):
+class HTTPClient(object):
 
     USER_AGENT = 'python-cinderclient'
 
