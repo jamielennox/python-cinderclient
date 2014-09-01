@@ -54,7 +54,7 @@ if not hasattr(urlparse, 'parse_qsl'):
 _VALID_VERSIONS = ['v1', 'v2']
 
 
-def _get_volume_api_from_url(url):
+def get_volume_api_from_url(url):
     scheme, netloc, path, query, frag = urlparse.urlsplit(url)
     components = path.split("/")
 
@@ -96,7 +96,7 @@ class SessionClient(adapter.LegacyJsonAdapter):
         return self._cs_request(url, 'DELETE', **kwargs)
 
     def get_volume_api_version_from_endpoint(self):
-        return _get_volume_api_from_url(self.get_endpoint())
+        return get_volume_api_from_url(self.get_endpoint())
 
     def authenticate(self, auth=None):
         self.invalidate(auth)
@@ -279,7 +279,7 @@ class HTTPClient(CinderClientMixin):
         return self._cs_request(url, 'DELETE', **kwargs)
 
     def get_volume_api_version_from_endpoint(self):
-        return _get_volume_api_from_url(self.management_url)
+        return get_volume_api_from_url(self.management_url)
 
     def _extract_service_catalog(self, url, resp, body, extract_token=True):
         """See what the auth service told us and process the response.
