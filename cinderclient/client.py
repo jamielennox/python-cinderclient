@@ -58,7 +58,7 @@ def get_volume_api_from_url(url):
     scheme, netloc, path, query, frag = urlparse.urlsplit(url)
     components = path.split("/")
 
-    for version in _valid_versions:
+    for version in _VALID_VERSIONS:
         if version in components:
             return version[1:]
 
