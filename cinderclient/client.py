@@ -71,9 +71,21 @@ def get_volume_api_from_url(url):
 
 class SessionClient(adapter.LegacyJsonAdapter):
 
-    def request(self, *args, **kwargs):
+    def request(self, url, method, **kwargs):
         kwargs.setdefault('authenticated', False)
-        return super(SessionClient, self).request(*args, **kwargs)
+
+        # NOTE(thingee): v1 and v2 require the project id in the url. Prepend
+        # it if we're doing discovery. We figure out if we're doing discovery
+        # if there is no project id already specified in the path. parts is
+        # a list where index 1 is the version discovered and index 2 might be
+        # an empty string or a project id.
+        parts = urlparse.urlsplit(self.get_endpoint()).path.split('/')
+        project_id = self._get_project_id()
+        if (parts[1] in ['v1', 'v2'] and parts[2] == ''
+                and project_id is not None):
+            url = '{0}{1}'.format(project_id, url)
+
+        return super(SessionClient, self).request(url, method, **kwargs)
 
     def _cs_request(self, url, method, **kwargs):
         # this function is mostly redundant but makes compatibility easier
@@ -91,6 +103,20 @@ class SessionClient(adapter.LegacyJsonAdapter):
 
     def delete(self, url, **kwargs):
         return self._cs_request(url, 'DELETE', **kwargs)
+
+    def _get_project_id(self):
+        """Get the project_id in this session
+
+        We check for get_access attr, because the auth plugin might not be
+        based off Keystone's identity object.
+        """
+        # TODO(thingee): This will be implemented in Keystone client. For now
+        # we will implement it in Cinder client and remove later. See
+        # https://review.openstack.org/#/c/118520
+        auth = self.auth or self.session.auth
+        if hasattr(auth, 'get_access'):
+            return self.session.auth.get_access(self.session).project_id
+        return None
 
     def get_volume_api_version_from_endpoint(self):
         return get_volume_api_from_url(self.get_endpoint())
@@ -520,7 +546,7 @@ def get_client_class(version):
         '2': 'cinderclient.v2.client.Client',
     }
     try:
-        client_path = version_map[str(version)]
+        client_path = version_map[str(version[0])]
     except (KeyError, ValueError):
         msg = "Invalid client version '%s'. must be one of: %s" % (
             (version, ', '.join(version_map)))
@@ -529,6 +555,6 @@ def get_client_class(version):
     return importutils.import_class(client_path)
 
 
-def Client(version, *args, **kwargs):
-    client_class = get_client_class(version)
+def Client(*args, **kwargs):
+    client_class = get_client_class(kwargs['version'])
     return client_class(*args, **kwargs)
