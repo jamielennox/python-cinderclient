@@ -14,6 +14,7 @@
 #    under the License.
 
 import fixtures
+from keystoneclient import fixture
 import mock
 from requests_mock.contrib import fixture as requests_mock_fixture
 from six.moves.urllib import parse
@@ -54,6 +55,13 @@ class ShellTest(utils.TestCase):
         self.requests.register_uri(
             'GET', keystone_client.BASE_URL,
             text=keystone_client.keystone_request_callback)
+
+        token = fixture.V2Token()
+        s = token.add_service('volume', 'cinder')
+        s.add_endpoint(public='http://cinder.host:9292')
+
+        self.requests.post(keystone_client.BASE_URL + 'v2.0/tokens',
+                           json=token)
 
     def tearDown(self):
         # For some methods like test_image_meta_bad_action we are
